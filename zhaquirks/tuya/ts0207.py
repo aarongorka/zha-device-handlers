@@ -1,8 +1,10 @@
 """Quirk for TS0207 rain sensors."""
 
-import zigpy.types as t
+import logging
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -16,6 +18,8 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
+
+from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -24,14 +28,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya.mcu import TuyaMCUCluster
 from zhaquirks.tuya import (
     DPToAttributeMapping,
     EnchantedDevice,
     TuyaNoBindPowerConfigurationCluster,
 )
-from zhaquirks import Bus
-import logging
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 ZONE_TYPE = 0x0001
 
@@ -101,7 +103,9 @@ class TuyaIlluminanceCluster(CustomCluster, IlluminanceMeasurement):
 
     # The value gets passed through `round(pow(10, ((value - 1) / 10000)))` by ZHA
     # https://github.com/zigpy/zha/blob/927e249134c87bd7805139c8fb61e048593ec155/zha/application/platforms/sensor/__init__.py#L782C9-L782C53
-    CALIBRATION_FACTOR = 7  # very approximate adjustment, do not expect this to be accurate
+    CALIBRATION_FACTOR = (
+        7  # very approximate adjustment, do not expect this to be accurate
+    )
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -115,7 +119,7 @@ class TuyaIlluminanceCluster(CustomCluster, IlluminanceMeasurement):
 
         calibrated_value = value * self.CALIBRATION_FACTOR
         self._update_attribute(self.MEASURED_VALUE_ATTR_ID, calibrated_value)
-        LOGGER.debug(f"measured_value attribute updated.")
+        LOGGER.debug("measured_value attribute updated.")
 
 
 class TuyaIasZone(CustomCluster, IasZone):
@@ -130,7 +134,7 @@ class TuyaSolarRainSensor(EnchantedDevice):
     def __init__(self, *args, **kwargs) -> None:
         """Init."""
         self.illuminance_bus = Bus()
-        LOGGER.debug(f"Bus created.")
+        LOGGER.debug("Bus created.")
         super().__init__(*args, **kwargs)
 
     signature = {
